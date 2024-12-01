@@ -1,0 +1,413 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <windows.h>
+#include<conio.h>
+
+#define USERNAME "admin"
+#define PASSWORD "1234"
+#define RESET  "\033[0m"
+#define GREEN  "\033[32m"         //Colour codes
+#define RED    "\033[31m"
+#define YELLOW "\033[33m"
+#define BLUE   "\033[34m"
+#define CYN    "\033[0;36m"
+#define MAG    "\033[0;35m"
+#define ORG    "\033[38;5;214m"
+#define GRAY   "\033[90m"
+
+struct contact {
+    char name[100];
+    long long int phnum;
+    int isBlocked; // 0 if not blocked, 1 if blocked
+};
+
+// Authentication
+void login() {
+    char username[50];
+    char password[50];
+
+label:
+    printf(YELLOW"Enter Username: "RESET);
+    gets(username);
+    printf(YELLOW"Enter password: "RESET);
+    gets(password);
+    if (strcmp(username, USERNAME) == 0 && strcmp(password, PASSWORD) == 0) {
+        printf(GREEN"ACCESS GRANTED\n"RESET);
+        Sleep(500);
+    } else {
+        printf(RED"ACCESS DENIED\nTry Again.\n"RESET);
+        Sleep(500);
+        goto label;
+    }
+}
+
+
+int main() {
+    struct contact data[100] = {
+        {"nishchal", 8792772345, 0},
+        {"khushi", 8792772346, 0},
+        {"atul", 8792772347, 0},
+        {"divyansh", 8792772348, 0}
+    };
+    login();
+    int size = 4;  // Number of contacts initially in the list
+    int choice;
+    int block=0;
+    int flag=0;
+
+    while (1) {  // Infinite loop to keep showing the main menu until exit
+        printf(CYN"\n--- Main Menu ---\n"RESET);
+        printf(GRAY"Enter 1 for calling\n");
+        printf("Enter 2 to save contact \n");
+        printf("Enter 3 to edit contact\n");
+        printf("Enter 4 to see call history\n");
+        printf("Enter 5 to see all saved contacts\n");
+        printf("Enter 6 to delete a contact\n");
+        printf("Enter 7 to block a contact\n");
+        printf("Enter 8 to unblock a contact\n");
+        printf("Enter 9 to search a contact\n");
+        printf("Enter 10 delete all call history\n");
+        printf("Enter 11 to exit\n"RESET);
+        printf("\nWhat do you want to do: ");
+        scanf("%d", &choice);
+        getchar();
+
+        char naam[100];
+        
+        if (choice == 1) {
+    printf("Enter the name of the person to be called: ");
+    scanf("%[^\n]", naam);
+    getchar();
+
+    FILE *file = fopen("call.txt", "a");
+
+    int found = 0;
+    for (int i = 0; i < size; i++) {
+        if (strcmp(data[i].name, naam) == 0) {
+            if (data[i].isBlocked) {
+                printf(RED"Call cannot be made as %s is blocked.\n"RESET, data[i].name);
+            } 
+            else {
+                printf(GREEN"Calling %s : %lld\n"RESET, data[i].name, data[i].phnum);
+                printf("Press Enter to end the call...\n");
+                int beep_count=0,fl=0;
+                // Loop to keep the beep sound going until Enter is pressed
+                while (1) {
+                    Beep(750, 300);  // Sound beep
+                    Beep(750, 300); 
+                    Sleep(500);
+                    beep_count++;
+                    if (kbhit() && getchar() == '\n') { // Break on pressing Enter key
+                        printf(ORG"Call Ended\n"RESET); 
+                        fl=1;
+                        break;
+                    }
+                    if(beep_count==7&&fl==0){
+                        printf(ORG"Call Ended\n"RESET); 
+                        break;
+                    }
+                }
+                
+                fprintf(file, "%s : %lld\n", data[i].name, data[i].phnum);
+                flag=1;
+            }
+            found = 1;
+            fclose(file); 
+            break;
+        }
+    }
+    if (!found) {
+        printf(RED"The name does not exist.\n"RESET);
+    }
+}
+         
+        else if (choice == 2) {
+            printf("Enter the name to be saved: ");
+            scanf("%[^\n]", naam);
+            getchar();
+
+            int exists = 0;
+            for (int i = 0; i < size; i++) {
+                if (strcmp(data[i].name, naam) == 0) {
+                    exists = 1;
+                    break;
+                }
+            }
+
+            if (exists) {
+                printf(RED"Name already exists.\n"RESET);
+            } 
+            else {
+                printf("Enter the phone number: ");
+                long long int phnum = 0;
+                char ch;
+                int i = 0;
+        
+                while (1) {
+                ch = getch();  
+                if (ch == '\r') {  
+                    break;
+                  }
+                if (ch >= '0' && ch <= '9') {
+                    phnum = phnum * 10 + (ch - '0');
+                    printf("%c", ch);
+                    Beep(750, 100);  
+                  }
+                }
+
+                if (phnum < 1000000000 || phnum > 9999999999) {
+                    printf(RED"Enter a valid phone number.\n"RESET);
+                } 
+                else {
+                    strcpy(data[size].name, naam);
+                    data[size].phnum = phnum;
+                    data[size].isBlocked = 0;  // New contact is not blocked by default
+                    size++;
+                    printf(GREEN"\nContact saved successfully.\n"RESET);
+                }
+                
+            }
+
+        } 
+        else if (choice == 3) {
+            char choice2;
+            char naam2[100];
+            
+            printf("Enter \"a\" to edit name.\nEnter \"b\" to edit number: ");
+            scanf(" %c", &choice2);
+            getchar();
+
+            if (choice2 == 'a') {
+                printf("Enter old name: ");
+                scanf("%[^\n]", naam);
+                getchar();
+                printf("Enter new name: ");
+                scanf("%[^\n]", naam2);
+                getchar();
+
+                int found = 0;
+                for (int i = 0; i < size; i++) {
+                    if (strcmp(data[i].name, naam) == 0) {
+                        strcpy(data[i].name, naam2);
+                        found = 1;
+                        printf(GREEN"Name updated successfully.\n"RESET);
+                        break;
+                    }
+                }
+                if (!found) {
+                    printf(RED"The contact that needs to be edited does not exist.\n"RESET);
+                }
+            } 
+            else if (choice2 == 'b') {
+                printf("Enter the name for which to update the number: ");
+                scanf("%[^\n]", naam);
+                getchar();
+
+                printf("Enter the new number: ");
+                long long int new_phnum = 0;
+                char ch;
+                int i = 0;
+        
+                while (1) {
+                ch = getch();  
+                if (ch == '\r') {  
+                    break;
+                  }
+                if (ch >= '0' && ch <= '9') {
+                    new_phnum = new_phnum * 10 + (ch - '0');
+                    printf("%c", ch);
+                    Beep(750, 100);  
+                  }
+                }
+
+                if (new_phnum < 1000000000 || new_phnum > 9999999999) {
+                    printf(RED"Enter a valid phone number.\n"GREEN);
+                } 
+                else {
+                    int found = 0;
+                    for (int i = 0; i < size; i++) {
+                        if (strcmp(data[i].name, naam) == 0) {
+                            data[i].phnum = new_phnum;
+                            found = 1;
+                            printf(GREEN"\nNumber updated successfully.\n"RESET);
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        printf(RED"The contact does not exist.\n"RESET);
+                    }
+                }
+            }
+        } 
+
+        else if (choice == 4) 
+        {
+            if(flag){
+            printf("Call History:\n"RESET);
+            FILE *file = fopen("call.txt","r");
+            char ch;
+            while ((ch = fgetc(file)) != EOF) 
+            putchar(ch);
+            fclose(file);
+            Sleep(800);
+            }
+            else{
+                printf(ORG"No Call History"RESET);
+                Sleep(800);
+            }
+        } 
+
+        else if (choice == 5) 
+        {
+            printf(GREEN"\nSaved Contacts:\n"RESET);
+            for (int i = 0; i < size; i++) 
+            {
+                if (!data[i].isBlocked) 
+                {
+                    printf("%s : %lld\n", data[i].name, data[i].phnum);
+                }
+            }
+            printf(RED"Blocked Contacts:\n"RESET);
+            if(block!=0){
+            for (int i = 0; i < size; i++) 
+            {
+                if (data[i].isBlocked) 
+                {
+                    printf("%s : %lld\n", data[i].name, data[i].phnum);
+                }
+            }
+            }
+            else{
+                printf("No Blocked Contacts\n");
+            }
+            Sleep(800);
+        } 
+        
+        else if (choice == 6)
+        {
+            printf("Enter the name of the contact to delete: ");
+            scanf("%[^\n]", naam);
+            getchar();
+
+            int found = 0;
+            for (int i = 0; i < size; i++)
+            {
+                if (strcmp(data[i].name, naam) == 0)
+                {
+                     // Shift all elements after the found element to the left
+            for (int j = i; j < size - 1; j++)
+            {
+                data[j] = data[j + 1];
+            }
+            size--;  // Reduce the size of the list
+            found = 1;
+            break;
+            }
+                    if (data[i+1].isBlocked) 
+                    {
+                        printf(GREEN"Deleted a blocked contact: '%s'\n"RESET, naam);
+                        block--;
+                    } 
+                        
+                    else
+                    {
+                    printf(GREEN"The contact '%s' deleted successfully.\n"RESET, naam);
+                    }
+            }
+        
+
+        if (!found) 
+        {
+            printf(RED"The name entered does not exist.\n"RESET);
+        }
+        }
+
+        else if (choice == 7) 
+        {
+            printf("Enter the name of the contact to block: ");
+            scanf("%[^\n]", naam);
+            getchar();
+
+            int found = 0;
+            for (int i = 0; i < size; i++) {
+                if (strcmp(data[i].name, naam) == 0) {
+                    data[i].isBlocked = 1;
+                    found = 1;
+                    printf(GREEN"The contact '%s' is now blocked.\n"RESET, naam);
+                    block++;
+                    break;
+                }
+            }
+            if (!found) {
+                printf(RED"The name entered does not exist.\n"RESET);
+            }
+        
+        }
+
+        else if (choice == 8) 
+        { // Unblock a contact
+            printf("Enter the name of the contact to unblock: ");
+            scanf("%[^\n]", naam);
+            getchar();
+
+            int found = 0;
+            for (int i = 0; i < size; i++) {
+                if (strcmp(data[i].name, naam) == 0) {
+                    data[i].isBlocked = 0;
+                    found = 1;
+                    printf(GREEN"The contact '%s' is now unblocked.\n"RESET, naam);
+                    block--;
+                    break;
+                }
+            }
+            if (!found) {
+                printf(RED"The name entered does not exist.\n"RESET);
+            } 
+        }
+        else if (choice == 9) 
+        {
+            printf("Enter the name to search: ");
+            scanf("%[^\n]", naam);
+            getchar();
+            int found = 0;
+            printf("Search results for '%s':\n", naam);
+            for (int i = 0; i < size; i++) 
+            {
+                if (strcmp(data[i].name, naam) == 0) 
+                {
+                    printf(GREEN"%s : %lld\n"RESET, data[i].name, data[i].phnum);
+                    found = 1;
+                }
+            }
+
+            if (!found)
+            {
+                printf(RED"No contact found.\n"RESET);
+            }
+            
+        }
+
+        else if (choice == 10) 
+        {
+            printf(GREEN"deleted all call history"RESET);
+            FILE *file = fopen("call.txt","w");
+            fclose(file); 
+            flag=0;
+
+        }
+
+
+        else if (choice == 11) 
+        {
+            printf(GREEN"Exiting program. Goodbye!\n"RESET);
+            break;
+        }
+        
+        else
+        {
+            printf(RED"Invalid choice. Please try again.\n"RESET);
+        }
+    }
+return 0;
+}
